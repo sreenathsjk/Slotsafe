@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlotSafe — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0a0a0a;--bg:#0d0d0d;--card:#141414;--card2:#181818;
+    --border:#1e1e1e;--border-l:#262626;
+    --green:#00e87a;--green-dim:rgba(0,232,122,.08);--green-mid:rgba(0,232,122,.25);
+    --white:#f0f0eb;--muted:#666;--muted-l:#999;
+    --danger:#ff4d4d;--warning:#f59e0b;--info:#3b82f6;
+    --sidebar:220px;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;display:flex;min-height:100vh}
+
+  /* ── SIDEBAR ── */
+  .sidebar{width:var(--sidebar);background:var(--black);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+  .sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--white);text-decoration:none}
+  .logo-icon{width:30px;height:30px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-icon svg{width:16px;height:16px;stroke:#0a0a0a;stroke-width:2.5;fill:none;stroke-linecap:round}
+  .sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--muted-l);font-size:14px;font-weight:500;text-decoration:none;transition:all .2s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+  .nav-item svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .nav-item:hover,.nav-item.active{background:var(--card);color:var(--white)}
+  .nav-item.active{color:var(--green)}
+  .nav-item .badge{margin-left:auto;background:var(--green);color:var(--black);font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px}
+  .sidebar-footer{padding:16px 12px;border-top:1px solid var(--border)}
+  .user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--card)}
+  .user-avatar{width:34px;height:34px;background:var(--green-dim);border:1px solid var(--green-mid);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--green);flex-shrink:0}
+  .user-info{overflow:hidden}
+  .user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-plan{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+  /* ── MAIN ── */
+  .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column}
+  .topbar{background:var(--black);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+  .topbar-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+  .topbar-actions{display:flex;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:100px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+  .btn-primary{background:var(--green);color:var(--black)}
+  .btn-primary:hover{background:#00ff88;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--muted-l);border:1px solid var(--border-l)}
+  .btn-ghost:hover{color:var(--white);border-color:var(--border)}
+  .btn-danger{background:rgba(255,77,77,.1);color:var(--danger);border:1px solid rgba(255,77,77,.2)}
+  .btn-danger:hover{background:rgba(255,77,77,.2)}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round}
+
+  .content{padding:28px;flex:1}
+
+  /* ── STATS ── */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;position:relative;overflow:hidden}
+  .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);transform:scaleX(0);transition:transform .3s;transform-origin:left}
+  .stat-card:hover::after{transform:scaleX(1)}
+  .stat-label{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px}
+  .stat-value{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1;color:var(--white)}
+  .stat-value.green{color:var(--green)}
+  .stat-sub{font-size:12px;color:var(--muted);margin-top:6px}
+
+  /* ── TABLE AREA ── */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .section-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+  .filters{display:flex;align-items:center;gap:8px}
+  .filter-btn{padding:7px 14px;border-radius:100px;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;background:transparent;border:1px solid var(--border);color:var(--muted-l);cursor:pointer;transition:all .2s}
+  .filter-btn.active,.filter-btn:hover{background:var(--green-dim);border-color:var(--green-mid);color:var(--green)}
+  .search-box{background:var(--card);border:1px solid var(--border);border-radius:100px;padding:8px 16px;display:flex;align-items:center;gap:8px}
+  .search-box svg{width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+  .search-box input{background:none;border:none;color:var(--white);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:160px}
+  .search-box input::placeholder{color:var(--muted)}
+
+  .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead tr{border-bottom:1px solid var(--border)}
+  th{padding:14px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  td{padding:14px 16px;font-size:14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .client-name{font-weight:600;color:var(--white)}
+  .client-phone{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:600}
+  .badge-confirmed{background:rgba(0,232,122,.1);color:var(--green);border:1px solid rgba(0,232,122,.2)}
+  .badge-pending{background:rgba(245,158,11,.1);color:var(--warning);border:1px solid rgba(245,158,11,.2)}
+  .badge-cancelled{background:rgba(255,77,77,.1);color:var(--danger);border:1px solid rgba(255,77,77,.2)}
+  .badge-noshow{background:rgba(100,100,100,.1);color:var(--muted-l);border:1px solid var(--border)}
+  .badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .empty-state{text-align:center;padding:64px 24px;color:var(--muted)}
+  .empty-state svg{width:48px;height:48px;margin:0 auto 16px;opacity:.3;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;display:block}
+  .empty-state h3{font-size:16px;font-weight:600;color:var(--muted-l);margin-bottom:8px}
+  .empty-state p{font-size:14px}
+
+  /* ── MODAL ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border-l);border-radius:20px;padding:32px;width:100%;max-width:480px;animation:modalIn .3s ease}
+  @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+  .modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:24px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  .form-group input,.form-group select,.form-group textarea{width:100%;background:var(--black);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--white);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--green)}
+  .form-group select option{background:var(--black)}
+  .form-group textarea{resize:vertical;min-height:80px}
+  .modal-actions{display:flex;gap:10px;margin-top:8px}
+  .modal-actions .btn{flex:1;justify-content:center}
+
+  /* ── TOAST ── */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border-l);border-radius:12px;padding:14px 20px;font-size:14px;display:flex;align-items:center;gap:10px;z-index:500;animation:toastIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+  .toast.hidden{display:none}
+  .toast.success{border-color:var(--green-mid)}
+  .toast.success .toast-icon{color:var(--green)}
+  .toast.error{border-color:rgba(255,77,77,.3)}
+  .toast.error .toast-icon{color:var(--danger)}
+  .toast-icon{font-size:18px}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ── TRIAL BANNER ── */
+  .trial-banner{background:var(--green-dim);border-bottom:1px solid var(--green-mid);padding:10px 28px;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+  .trial-banner span{color:var(--green)}
+  .trial-banner strong{color:var(--white)}
+
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%)}
+    .main{margin-left:0}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="index.html" class="sidebar-logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    SlotSafe
+  </a>
+  <nav class="sidebar-nav">
+    <a class="nav-item active" onclick="showSection('appointments')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Appointments
+      <span class="badge" id="pendingBadge">0</span>
+    </a>
+    <a class="nav-item" onclick="showSection('waitlist')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Waitlist
+    </a>
+    <a class="nav-item" onclick="showSection('reminders')">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      WA Reminders
+    </a>
+    <a class="nav-item" href="pricing.html">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Upgrade Plan
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar" id="userInitial">?</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Loading…</div>
+        <div class="user-plan" id="userPlan">Trial</div>
+      </div>
+    </div>
+    <button class="nav-item" onclick="handleLogout()" style="margin-top:8px;color:var(--danger)">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="trial-banner" id="trialBanner">
+    <span>🎉 <strong>14-day free trial</strong> — <span id="trialDays">14</span> days remaining</span>
+    <a href="pricing.html" class="btn btn-primary btn-sm">Upgrade Now →</a>
+  </div>
+  <div class="topbar">
+    <div class="topbar-title" id="sectionTitle">Appointments</div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="openModal()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Appointment
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── APPOINTMENTS SECTION ── -->
+    <div id="sec-appointments">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Today's Appointments</div>
+          <div class="stat-value" id="statToday">0</div>
+          <div class="stat-sub">Scheduled for today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Confirmed</div>
+          <div class="stat-value green" id="statConfirmed">0</div>
+          <div class="stat-sub">Replied YES</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="statPending" style="color:var(--warning)">0</div>
+          <div class="stat-sub">Awaiting confirmation</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Revenue Saved</div>
+          <div class="stat-value green" id="statSaved">₹0</div>
+          <div class="stat-sub">This month via recovery</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2 class="section-title">All Appointments</h2>
+        <div class="filters">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Search client…" oninput="renderTable()">
+          </div>
+          <button class="filter-btn active" data-filter="all" onclick="setFilter(this)">All</button>
+          <button class="filter-btn" data-filter="confirmed" onclick="setFilter(this)">Confirmed</button>
+          <button class="filter-btn" data-filter="pending" onclick="setFilter(this)">Pending</button>
+          <button class="filter-btn" data-filter="cancelled" onclick="setFilter(this)">Cancelled</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Service</th>
+              <th>Date & Time</th>
+              <th>Ticket (₹)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentsTable"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" style="display:none">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <h3>No appointments yet</h3>
+          <p>Click "Add Appointment" to schedule your first booking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WAITLIST SECTION ── -->
+    <div id="sec-waitlist" style="display:none">
+      <div class="section-header">
+        <h2 class="section-title">Waitlist</h2>
+        <button class="btn btn-primary" onclick="openWaitlistModal()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add to Waitlist
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Client</th><th>Phone</th><th>Service Wanted</th><th>Added</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="waitlistTable"></tbody>
+        </table>
+        <div class="empty-state" id="waitlistEmpty">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <h3>Waitlist is empty</h3>
+          <p>Add clients who want to be notified when a slot opens.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REMINDERS SECTION ── -->
+    <div id="sec-reminders" style="display:none">
+      <div class="section-header">
+        <h2 class="section-title">WhatsApp Reminder Simulator</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Send Test Reminder</h3>
+            <div class="form-group">
+              <label>Select Appointment</label>
+              <select id="reminderApptSelect" style="background:var(--black);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--white);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;width:100%">
+                <option value="">-- Choose appointment --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Message Type</label>
+              <select id="reminderType" style="background:var(--black);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--white);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;width:100%">
+                <option value="confirmation">24h Confirmation Request</option>
+                <option value="reminder">Same-day Reminder</option>
+                <option value="followup">No-reply Follow-up</option>
+                <option value="recovery">Slot Recovery (Waitlist)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="simulateReminder()">
+              <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Simulate WhatsApp Message
+            </button>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">📊 Reminder Stats</h3>
+            <div style="display:flex;flex-direction:column;gap:10px" id="reminderStats">
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Total sent</span><strong id="rStatTotal">0</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Confirmed</span><strong style="color:var(--green)" id="rStatConfirmed">0</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Cancelled</span><strong style="color:var(--danger)" id="rStatCancelled">0</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 0"><span style="color:var(--muted)">Slots recovered</span><strong style="color:var(--green)" id="rStatRecovered">0</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WA Preview -->
+        <div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+            <div style="background:#128C7E;padding:14px 20px;display:flex;align-items:center;gap:12px">
+              <div style="width:36px;height:36px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px">✂️</div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:white" id="waBusinessName">Your Salon</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.7)">via SlotSafe · Appointment Bot</div>
+              </div>
+            </div>
+            <div style="background:#0b1414;min-height:380px;padding:16px;display:flex;flex-direction:column;gap:10px" id="waChatArea">
+              <div style="text-align:center;font-size:12px;color:#667;padding:8px">WhatsApp messages will appear here</div>
+            </div>
+            <div id="waReplyArea" style="display:none;background:#1a2626;padding:12px;gap:8px;display:none">
+              <div style="display:flex;gap:8px" id="replyBtns"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD APPOINTMENT MODAL -->
+<div class="modal-overlay" id="apptModal">
+  <div class="modal">
+    <h2 class="modal-title" id="modalTitle">Add Appointment</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Client Name *</label>
+        <input type="text" id="f_clientName" placeholder="Priya Sharma">
+      </div>
+      <div class="form-group">
+        <label>Phone (WhatsApp) *</label>
+        <input type="tel" id="f_phone" placeholder="+91 98765 43210">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Service *</label>
+      <input type="text" id="f_service" placeholder="Hair Spa + Colour">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="f_date">
+      </div>
+      <div class="form-group">
+        <label>Time *</label>
+        <input type="time" id="f_time">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Ticket Value (₹)</label>
+        <input type="number" id="f_ticket" placeholder="1200">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f_status">
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="noshow">No-show</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="f_notes" placeholder="Any special requests or notes…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAppointment()">Save Appointment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD WAITLIST MODAL -->
+<div class="modal-overlay" id="waitlistModal">
+  <div class="modal">
+    <h2 class="modal-title">Add to Waitlist</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Client Name *</label>
+        <input type="text" id="w_name" placeholder="Anjali Singh">
+      </div>
+      <div class="form-group">
+        <label>Phone (WhatsApp) *</label>
+        <input type="tel" id="w_phone" placeholder="+91 98765 43210">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Service Wanted</label>
+      <input type="text" id="w_service" placeholder="Hair colour, threading…">
+    </div>
+    <div class="form-group">
+      <label>Preferred Days/Times</label>
+      <input type="text" id="w_pref" placeholder="Weekends afternoon">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeWaitlistModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWaitlist()">Add to Waitlist</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast">
+  <span class="toast-icon" id="toastIcon">✓</span>
+  <span id="toastMsg">Saved</span>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+         onSnapshot, query, where, orderBy, getDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const FIREBASE_CONFIG = {
+  apiKey:"YOUR_API_KEY", authDomain:"YOUR_PROJECT.firebaseapp.com",
+  projectId:"YOUR_PROJECT_ID", storageBucket:"YOUR_PROJECT.appspot.com",
+  messagingSenderId:"YOUR_SENDER_ID", appId:"YOUR_APP_ID"
+};
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let currentUser = null, userData = null;
+let appointments = [], waitlist = [];
+let editingApptId = null;
+let currentFilter = 'all';
+
+// ── AUTH GUARD ──
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  currentUser = user;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (snap.exists()) {
+    userData = snap.data();
+    document.getElementById('userName').textContent = userData.businessName || user.email;
+    document.getElementById('userInitial').textContent = (userData.businessName || user.email)[0].toUpperCase();
+    document.getElementById('userPlan').textContent = userData.plan || 'Trial';
+    document.getElementById('waBusinessName').textContent = userData.businessName || 'Your Salon';
+    if (userData.trialStart) {
+      const days = 14 - Math.floor((Date.now() - userData.trialStart.toMillis()) / 86400000);
+      document.getElementById('trialDays').textContent = Math.max(0, days);
+      if (userData.plan !== 'trial') document.getElementById('trialBanner').style.display = 'none';
+    }
+  }
+  subscribeAppointments();
+  subscribeWaitlist();
+});
+
+// ── REAL-TIME APPOINTMENTS ──
+function subscribeAppointments() {
+  const q = query(collection(db, 'appointments'),
+    where('uid', '==', currentUser.uid), orderBy('datetime', 'desc'));
+  onSnapshot(q, snap => {
+    appointments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable();
+    updateStats();
+    populateReminderSelect();
+  });
+}
+
+function subscribeWaitlist() {
+  const q = query(collection(db, 'waitlist'), where('uid','==',currentUser.uid), orderBy('createdAt','desc'));
+  onSnapshot(q, snap => {
+    waitlist = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderWaitlist();
+  });
+}
+
+// ── STATS ──
+function updateStats() {
+  const today = new Date().toDateString();
+  const todayAppts = appointments.filter(a => a.datetime && new Date(a.datetime).toDateString() === today);
+  document.getElementById('statToday').textContent = todayAppts.length;
+  document.getElementById('statConfirmed').textContent = appointments.filter(a => a.status === 'confirmed').length;
+  const pending = appointments.filter(a => a.status === 'pending').length;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('pendingBadge').textContent = pending;
+  const saved = appointments.filter(a => a.status === 'confirmed' && a.recovered)
+    .reduce((s, a) => s + (a.ticket || 0), 0);
+  document.getElementById('statSaved').textContent = '₹' + saved.toLocaleString('en-IN');
+}
+
+// ── TABLE ──
+window.setFilter = (btn) => {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.filter;
+  renderTable();
+};
+
+window.renderTable = () => {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let filtered = appointments.filter(a => {
+    const matchFilter = currentFilter === 'all' || a.status === currentFilter;
+    const matchSearch = !search || a.clientName?.toLowerCase().includes(search) || a.service?.toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+  const tbody = document.getElementById('appointmentsTable');
+  const empty = document.getElementById('emptyState');
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map(a => {
+    const dt = a.datetime ? new Date(a.datetime) : null;
+    const dateStr = dt ? dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const timeStr = dt ? dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '';
+    const badge = {confirmed:'badge-confirmed',pending:'badge-pending',cancelled:'badge-cancelled',noshow:'badge-noshow'}[a.status] || 'badge-pending';
+    return `<tr>
+      <td><div class="client-name">${esc(a.clientName)}</div><div class="client-phone">${esc(a.phone||'')}</div></td>
+      <td>${esc(a.service||'—')}</td>
+      <td>${dateStr}${timeStr ? '<br><span style="font-size:12px;color:var(--muted)">'+timeStr+'</span>' : ''}</td>
+      <td>${a.ticket ? '₹'+Number(a.ticket).toLocaleString('en-IN') : '—'}</td>
+      <td><span class="badge ${badge}">${a.status||'pending'}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="editAppt('${a.id}')">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="changeStatus('${a.id}','confirmed')" style="color:var(--green)">✓</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+function renderWaitlist() {
+  const tbody = document.getElementById('waitlistTable');
+  const empty = document.getElementById('waitlistEmpty');
+  if (!waitlist.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = waitlist.map(w => `<tr>
+    <td><div class="client-name">${esc(w.name)}</div></td>
+    <td>${esc(w.phone||'—')}</td>
+    <td>${esc(w.service||'Any')}</td>
+    <td style="font-size:12px;color:var(--muted)">${w.createdAt ? new Date(w.createdAt.toMillis()).toLocaleDateString('en-IN') : '—'}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteWaitlist('${w.id}')">Remove</button></td>
+  </tr>`).join('');
+}
+
+// ── MODAL ──
+window.openModal = (id) => {
+  editingApptId = id || null;
+  document.getElementById('modalTitle').textContent = id ? 'Edit Appointment' : 'Add Appointment';
+  if (id) {
+    const a = appointments.find(x => x.id === id);
+    if (a) {
+      document.getElementById('f_clientName').value = a.clientName || '';
+      document.getElementById('f_phone').value = a.phone || '';
+      document.getElementById('f_service').value = a.service || '';
+      if (a.datetime) {
+        const dt = new Date(a.datetime);
+        document.getElementById('f_date').value = dt.toISOString().slice(0,10);
+        document.getElementById('f_time').value = dt.toTimeString().slice(0,5);
+      }
+      document.getElementById('f_ticket').value = a.ticket || '';
+      document.getElementById('f_status').value = a.status || 'pending';
+      document.getElementById('f_notes').value = a.notes || '';
+    }
+  } else {
+    document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+    ['f_clientName','f_phone','f_service','f_time','f_ticket','f_notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f_status').value = 'pending';
+  }
+  document.getElementById('apptModal').classList.add('open');
+};
+window.closeModal = () => { document.getElementById('apptModal').classList.remove('open'); editingApptId = null; };
+window.editAppt = (id) => openModal(id);
+
+window.saveAppointment = async () => {
+  const name = document.getElementById('f_clientName').value.trim();
+  const phone = document.getElementById('f_phone').value.trim();
+  const service = document.getElementById('f_service').value.trim();
+  const date = document.getElementById('f_date').value;
+  const time = document.getElementById('f_time').value;
+  if (!name || !service || !date || !time) { showToast('Please fill all required fields.', 'error'); return; }
+  const datetime = new Date(date + 'T' + time).toISOString();
+  const data = { uid: currentUser.uid, clientName: name, phone, service, datetime,
+    ticket: Number(document.getElementById('f_ticket').value) || 0,
+    status: document.getElementById('f_status').value,
+    notes: document.getElementById('f_notes').value.trim(),
+    updatedAt: serverTimestamp() };
+  try {
+    if (editingApptId) {
+      await updateDoc(doc(db, 'appointments', editingApptId), data);
+      showToast('Appointment updated ✓', 'success');
+    } else {
+      data.createdAt = serverTimestamp();
+      await addDoc(collection(db, 'appointments'), data);
+      showToast('Appointment added ✓', 'success');
+    }
+    closeModal();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+window.deleteAppt = async (id) => {
+  if (!confirm('Delete this appointment?')) return;
+  await deleteDoc(doc(db, 'appointments', id));
+  showToast('Appointment deleted', 'success');
+};
+
+window.changeStatus = async (id, status) => {
+  await updateDoc(doc(db, 'appointments', id), { status, updatedAt: serverTimestamp() });
+  showToast('Status updated → ' + status, 'success');
+};
+
+// ── WAITLIST MODAL ──
+window.openWaitlistModal = () => document.getElementById('waitlistModal').classList.add('open');
+window.closeWaitlistModal = () => document.getElementById('waitlistModal').classList.remove('open');
+window.saveWaitlist = async () => {
+  const name = document.getElementById('w_name').value.trim();
+  const phone = document.getElementById('w_phone').value.trim();
+  if (!name) { showToast('Client name required', 'error'); return; }
+  await addDoc(collection(db, 'waitlist'), {
+    uid: currentUser.uid, name, phone,
+    service: document.getElementById('w_service').value.trim(),
+    pref: document.getElementById('w_pref').value.trim(),
+    createdAt: serverTimestamp()
+  });
+  showToast('Added to waitlist ✓', 'success');
+  closeWaitlistModal();
+};
+window.deleteWaitlist = async (id) => {
+  await deleteDoc(doc(db, 'waitlist', id));
+  showToast('Removed from waitlist', 'success');
+};
+
+// ── SECTIONS ──
+window.showSection = (name) => {
+  ['appointments','waitlist','reminders'].forEach(s => {
+    document.getElementById('sec-'+s).style.display = s===name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach((el,i) => {
+    el.classList.toggle('active', el.getAttribute('onclick')?.includes(name));
+  });
+  const titles = {appointments:'Appointments', waitlist:'Waitlist', reminders:'WhatsApp Reminders'};
+  document.getElementById('sectionTitle').textContent = titles[name] || name;
+  document.querySelector('.topbar-actions').style.display = name==='reminders' ? 'none' : '';
+};
+
+// ── REMINDER SIMULATOR ──
+function populateReminderSelect() {
+  const sel = document.getElementById('reminderApptSelect');
+  sel.innerHTML = '<option value="">-- Choose appointment --</option>' +
+    appointments.map(a => `<option value="${a.id}">${esc(a.clientName)} — ${esc(a.service)} (${a.datetime ? new Date(a.datetime).toLocaleDateString('en-IN') : 'N/A'})</option>`).join('');
+}
+
+let reminderCounts = {total:0, confirmed:0, cancelled:0, recovered:0};
+window.simulateReminder = () => {
+  const apptId = document.getElementById('reminderApptSelect').value;
+  const type = document.getElementById('reminderType').value;
+  if (!apptId) { showToast('Please select an appointment first', 'error'); return; }
+  const appt = appointments.find(a => a.id === apptId);
+  if (!appt) return;
+  const bizName = userData?.businessName || 'Your Salon';
+  const dt = appt.datetime ? new Date(appt.datetime) : new Date();
+  const dateStr = dt.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  const timeStr = dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const messages = {
+    confirmation: {
+      msg: `Hi ${appt.clientName}! 👋 This is a reminder from *${bizName}*.\n\nYou have an appointment:\n📅 *${appt.service}*\n🗓 *${dateStr}*\n🕒 *${timeStr}*\n\nCan you confirm your slot?`,
+      replies: ['✅ YES, Confirm', '❌ Need to Cancel']
+    },
+    reminder: {
+      msg: `Good morning ${appt.clientName}! ☀️\n\nJust a reminder — you have *${appt.service}* at *${bizName}* today at *${timeStr}*.\n\nSee you soon! 💚`,
+      replies: ['👍 See you then!', '😔 Need to Reschedule']
+    },
+    followup: {
+      msg: `Hi ${appt.clientName}, we noticed you haven't confirmed your appointment yet at *${bizName}*.\n\n📅 *${appt.service}* — ${dateStr}, ${timeStr}\n\nYour slot is reserved for you. Please confirm!`,
+      replies: ['✅ Yes I\'ll be there', '❌ Cancel my slot']
+    },
+    recovery: {
+      msg: `Hi! 👋 A slot just opened at *${bizName}*:\n\n✂️ *${appt.service}*\n📅 *${dateStr}* at *${timeStr}*\n\nThis is a first-come, first-served opening. Reply YES to grab it!`,
+      replies: ['🙋 YES, Book it!', '❌ Not interested']
+    }
+  };
+  const m = messages[type];
+  const chat = document.getElementById('waChatArea');
+  chat.innerHTML = '';
+  addWAMsg(chat, m.msg, 'incoming');
+  reminderCounts.total++;
+  updateReminderStats();
+  document.getElementById('waReplyArea').style.display = 'flex';
+  const replyArea = document.getElementById('replyBtns');
+  replyArea.innerHTML = m.replies.map((r,i) =>
+    `<button onclick="handleWAReply('${apptId}','${type}',${i},'${esc(appt.clientName)}')" style="flex:1;background:#005c4b;color:#25D366;border:1px solid rgba(37,211,102,.3);border-radius:100px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer">${r}</button>`
+  ).join('');
+};
+
+window.handleWAReply = async (apptId, type, replyIdx, clientName) => {
+  const chat = document.getElementById('waChatArea');
+  const btns = document.getElementById('replyBtns').querySelectorAll('button');
+  const replyText = btns[replyIdx]?.textContent || 'Replied';
+  addWAMsg(chat, replyText, 'outgoing');
+  btns.forEach(b => b.disabled = true);
+  await new Promise(r => setTimeout(r, 800));
+  if (replyIdx === 0) {
+    const bizName = userData?.businessName || 'Your Salon';
+    if (type === 'confirmation' || type === 'followup') {
+      addWAMsg(chat, `✅ Perfect, ${clientName}! Your appointment is confirmed. See you soon at *${bizName}*! 💚`, 'incoming');
+      await updateDoc(doc(db, 'appointments', apptId), { status: 'confirmed', updatedAt: serverTimestamp() });
+      reminderCounts.confirmed++;
+      showToast('Appointment confirmed via WhatsApp ✓', 'success');
+    } else if (type === 'recovery') {
+      addWAMsg(chat, `🎉 Your slot is booked! See you at *${bizName}*. We'll send a reminder the day before.`, 'incoming');
+      reminderCounts.recovered++;
+      showToast('Slot recovered from waitlist! ✓', 'success');
+    } else {
+      addWAMsg(chat, `Great! See you then 💚`, 'incoming');
+    }
+  } else {
+    if (type === 'confirmation' || type === 'followup' || type === 'reminder') {
+      addWAMsg(chat, `No worries! Your slot has been released. Would you like to rebook for another time?`, 'incoming');
+      await updateDoc(doc(db, 'appointments', apptId), { status: 'cancelled', updatedAt: serverTimestamp() });
+      reminderCounts.cancelled++;
+      showToast('Appointment cancelled — waitlist pinged', 'success');
+      setTimeout(() => {
+        addWAMsg(chat, `🔔 *SlotSafe*: Notifying 3 waitlist clients about the opening…`, 'system');
+      }, 1200);
+    }
+  }
+  reminderCounts.total++;
+  updateReminderStats();
+};
+
+function addWAMsg(container, text, type) {
+  const el = document.createElement('div');
+  const styles = {
+    incoming: 'background:#1e2d2d;border-bottom-left-radius:4px;color:#e0e0e0;align-self:flex-start',
+    outgoing: 'background:#005c4b;border-bottom-right-radius:4px;color:white;align-self:flex-end',
+    system: 'background:rgba(0,232,122,.1);border:1px solid rgba(0,232,122,.3);color:#00e87a;align-self:center;text-align:center;font-size:12px;max-width:95%'
+  };
+  el.style.cssText = `max-width:85%;padding:10px 14px;border-radius:18px;font-size:13px;line-height:1.55;display:flex;flex-direction:column;${styles[type]}`;
+  el.innerHTML = text.replace(/\*(.*?)\*/g, '<strong>$1</strong>').replace(/\n/g,'<br>');
+  const time = document.createElement('div');
+  time.style.cssText = 'font-size:10px;color:rgba(255,255,255,.4);text-align:right;margin-top:4px';
+  time.textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  el.appendChild(time);
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+function updateReminderStats() {
+  document.getElementById('rStatTotal').textContent = reminderCounts.total;
+  document.getElementById('rStatConfirmed').textContent = reminderCounts.confirmed;
+  document.getElementById('rStatCancelled').textContent = reminderCounts.cancelled;
+  document.getElementById('rStatRecovered').textContent = reminderCounts.recovered;
+}
+
+// ── LOGOUT ──
+window.handleLogout = async () => {
+  await signOut(auth);
+  window.location.href = 'login.html';
+};
+
+// ── UTILS ──
+function esc(s) { return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = type==='success' ? '✓' : '✕';
+  t.className = `toast ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add('hidden'), 3000);
+}
+
+// Close modals on overlay click
+document.getElementById('apptModal').addEventListener('click', e => { if(e.target === document.getElementById('apptModal')) closeModal(); });
+document.getElementById('waitlistModal').addEventListener('click', e => { if(e.target === document.getElementById('waitlistModal')) closeWaitlistModal(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlotSafe — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0a0a0a;--bg:#0d0d0d;--card:#141414;--border:#1e1e1e;--border-l:#262626;
+    --green:#00e87a;--green-dim:rgba(0,232,122,.08);--green-mid:rgba(0,232,122,.25);
+    --white:#f0f0eb;--muted:#666;--muted-l:#999;--danger:#ff4d4d;
+    --warning:#f59e0b;--info:#3b82f6;--purple:#a855f7;--sidebar:220px;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar);background:var(--black);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+  .sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .sidebar-logo span{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--white)}
+  .admin-badge{font-size:10px;background:var(--purple);color:white;padding:2px 8px;border-radius:100px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .logo-icon{width:30px;height:30px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-icon svg{width:16px;height:16px;stroke:#0a0a0a;stroke-width:2.5;fill:none;stroke-linecap:round}
+  .sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--muted-l);font-size:14px;font-weight:500;text-decoration:none;transition:all .2s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+  .nav-item svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .nav-item:hover,.nav-item.active{background:var(--card);color:var(--white)}
+  .nav-item.active{color:var(--green)}
+  .sidebar-footer{padding:16px 12px;border-top:1px solid var(--border)}
+  .main{margin-left:var(--sidebar);flex:1}
+  .topbar{background:var(--black);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+  .topbar-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .content{padding:28px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s}
+  .btn-primary{background:var(--green);color:var(--black)}
+  .btn-primary:hover{background:#00ff88}
+  .btn-ghost{background:transparent;color:var(--muted-l);border:1px solid var(--border-l)}
+  .btn-ghost:hover{color:var(--white)}
+  .btn-sm{padding:5px 12px;font-size:12px}
+  .btn-danger{background:rgba(255,77,77,.1);color:var(--danger);border:1px solid rgba(255,77,77,.2)}
+
+  /* Stats */
+  .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+  .stat-label{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+  .stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1}
+  .stat-sub{font-size:11px;color:var(--muted);margin-top:5px}
+  .stat-up{color:var(--green)}
+  .stat-warn{color:var(--warning)}
+
+  /* Sections */
+  .section-tabs{display:flex;gap:0;background:var(--black);border:1px solid var(--border);border-radius:100px;padding:4px;width:fit-content;margin-bottom:20px}
+  .stab{padding:8px 18px;border:none;background:transparent;color:var(--muted-l);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border-radius:100px;cursor:pointer;transition:all .2s;white-space:nowrap}
+  .stab.active{background:var(--card);color:var(--white)}
+
+  .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead tr{border-bottom:1px solid var(--border)}
+  th{padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  td{padding:13px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.015)}
+
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600}
+  .badge-trial{background:rgba(245,158,11,.1);color:var(--warning);border:1px solid rgba(245,158,11,.2)}
+  .badge-starter{background:rgba(59,130,246,.1);color:var(--info);border:1px solid rgba(59,130,246,.2)}
+  .badge-pro{background:rgba(0,232,122,.1);color:var(--green);border:1px solid rgba(0,232,122,.2)}
+  .badge-studio{background:rgba(168,85,247,.1);color:var(--purple);border:1px solid rgba(168,85,247,.2)}
+  .badge-paid{background:rgba(0,232,122,.1);color:var(--green);border:1px solid rgba(0,232,122,.2)}
+  .badge-failed{background:rgba(255,77,77,.1);color:var(--danger);border:1px solid rgba(255,77,77,.2)}
+
+  .search-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .search-box{background:var(--card);border:1px solid var(--border);border-radius:100px;padding:8px 16px;display:flex;align-items:center;gap:8px;flex:1;max-width:340px}
+  .search-box svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+  .search-box input{background:none;border:none;color:var(--white);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
+  .search-box input::placeholder{color:var(--muted)}
+
+  /* Revenue chart */
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+  .chart-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:20px}
+  .bar-chart{display:flex;align-items:flex-end;gap:10px;height:140px}
+  .bar-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+  .bar{background:var(--green-dim);border:1px solid var(--green-mid);border-radius:6px 6px 0 0;width:100%;min-height:4px;transition:height .5s ease;position:relative}
+  .bar:hover{background:rgba(0,232,122,.25)}
+  .bar-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--black);border:1px solid var(--border-l);border-radius:6px;padding:4px 8px;font-size:11px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+  .bar:hover .bar-tooltip{opacity:1}
+  .bar-label{font-size:10px;color:var(--muted);white-space:nowrap}
+
+  /* User detail modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border-l);border-radius:20px;padding:32px;width:100%;max-width:520px;animation:modalIn .3s ease;max-height:90vh;overflow-y:auto}
+  @keyframes modalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  .modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:20px}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .detail-item{background:var(--black);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .detail-item label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+  .detail-item span{font-size:14px;font-weight:600}
+  .plan-select{background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;margin-bottom:12px;transition:border-color .2s}
+  .plan-select:focus{border-color:var(--green)}
+  .modal-actions{display:flex;gap:10px}
+  .modal-actions .btn{flex:1;justify-content:center}
+
+  .empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+  .empty-state p{font-size:14px;margin-top:8px}
+
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border-l);border-radius:12px;padding:14px 20px;font-size:14px;display:flex;align-items:center;gap:10px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+  .toast.hidden{display:none}
+  .toast.success{border-color:var(--green-mid)}
+  .toast.error{border-color:rgba(255,77,77,.3)}
+
+  @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <div>
+      <span>SlotSafe</span><br>
+      <span class="admin-badge">Admin</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active" onclick="showTab('overview')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Overview
+    </button>
+    <button class="nav-item" onclick="showTab('users')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      All Businesses
+    </button>
+    <button class="nav-item" onclick="showTab('payments')">
+      <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Payments
+    </button>
+    <button class="nav-item" onclick="showTab('appointments')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      All Appointments
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="nav-item" onclick="handleLogout()" style="color:var(--danger)">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Admin Dashboard
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:13px;color:var(--muted)" id="adminEmail">Loading…</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Businesses</div>
+          <div class="stat-value stat-up" id="statTotal">0</div>
+          <div class="stat-sub">Registered accounts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Paying Customers</div>
+          <div class="stat-value stat-up" id="statPaying">0</div>
+          <div class="stat-sub">Active subscriptions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Trial Users</div>
+          <div class="stat-value stat-warn" id="statTrial">0</div>
+          <div class="stat-sub">Free trials active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">MRR (Est.)</div>
+          <div class="stat-value stat-up" id="statMRR">₹0</div>
+          <div class="stat-sub">Monthly recurring revenue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Appointments</div>
+          <div class="stat-value" id="statAppts">0</div>
+          <div class="stat-sub">Across all businesses</div>
+        </div>
+      </div>
+
+      <!-- Revenue chart -->
+      <div class="chart-card">
+        <div class="chart-title">Plan Distribution</div>
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap" id="planDist">
+          <div style="font-size:13px;color:var(--muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Recent signups -->
+      <h3 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px">Recent Signups</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Business</th><th>Email</th><th>Plan</th><th>Joined</th><th>Action</th></tr></thead>
+          <tbody id="recentSignups"></tbody>
+        </table>
+        <div class="empty-state" id="recentEmpty" style="display:none"><p>No businesses yet.</p></div>
+      </div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tab-users" style="display:none">
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="userSearch" placeholder="Search business or email…" oninput="renderUsers()">
+        </div>
+        <select id="planFilter" onchange="renderUsers()" style="background:var(--card);border:1px solid var(--border);border-radius:100px;padding:8px 16px;color:var(--white);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <option value="all">All Plans</option>
+          <option value="trial">Trial</option>
+          <option value="starter">Starter</option>
+          <option value="pro">Pro</option>
+          <option value="studio">Studio</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Business</th><th>Email</th><th>Plan</th><th>Appointments</th><th>Joined</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="usersTable"></tbody>
+        </table>
+        <div class="empty-state" id="usersEmpty" style="display:none"><p>No users found.</p></div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS TAB -->
+    <div id="tab-payments" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Business</th><th>Plan</th><th>Amount</th><th>Razorpay ID</th><th>Date</th><th>Status</th></tr>
+          </thead>
+          <tbody id="paymentsTable"></tbody>
+        </table>
+        <div class="empty-state" id="paymentsEmpty"><p>No payments recorded yet.</p></div>
+      </div>
+    </div>
+
+    <!-- ALL APPOINTMENTS TAB -->
+    <div id="tab-appointments" style="display:none">
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="apptSearch" placeholder="Search client or service…" oninput="renderAllAppts()">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Client</th><th>Service</th><th>Business</th><th>Date</th><th>Ticket</th><th>Status</th></tr>
+          </thead>
+          <tbody id="allApptsTable"></tbody>
+        </table>
+        <div class="empty-state" id="allApptsEmpty" style="display:none"><p>No appointments found.</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <h2 class="modal-title" id="userModalTitle">Business Details</h2>
+    <div class="detail-grid" id="userDetailGrid"></div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Change Plan</label>
+      <select class="plan-select" id="changePlanSelect">
+        <option value="trial">Trial</option>
+        <option value="starter">Starter</option>
+        <option value="pro">Pro</option>
+        <option value="studio">Studio</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeUserModal()">Close</button>
+      <button class="btn btn-primary" onclick="updateUserPlan()">Update Plan</button>
+      <button class="btn btn-danger" onclick="deleteUser()">Delete User</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"><span id="toastMsg">Done</span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc,
+         query, orderBy, onSnapshot, where, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const FIREBASE_CONFIG = {
+  apiKey:"YOUR_API_KEY", authDomain:"YOUR_PROJECT.firebaseapp.com",
+  projectId:"YOUR_PROJECT_ID", storageBucket:"YOUR_PROJECT.appspot.com",
+  messagingSenderId:"YOUR_SENDER_ID", appId:"YOUR_APP_ID"
+};
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const PLAN_PRICE = { trial:0, starter:999, pro:1999, studio:3999 };
+
+let allUsers=[], allPayments=[], allAppts=[], selectedUserId=null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href='login.html'; return; }
+  const snap = await getDoc(doc(db,'users',user.uid));
+  if (!snap.exists() || snap.data().role !== 'admin') {
+    window.location.href = 'dashboard.html'; return;
+  }
+  document.getElementById('adminEmail').textContent = user.email;
+  loadAll();
+});
+
+async function loadAll() {
+  // Load users
+  onSnapshot(query(collection(db,'users'), orderBy('createdAt','desc')), snap => {
+    allUsers = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    updateStats();
+    renderRecentSignups();
+    renderUsers();
+  });
+  // Load payments
+  onSnapshot(query(collection(db,'payments'), orderBy('createdAt','desc')), snap => {
+    allPayments = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderPayments();
+  });
+  // Load all appointments
+  onSnapshot(query(collection(db,'appointments'), orderBy('datetime','desc')), snap => {
+    allAppts = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    document.getElementById('statAppts').textContent = allAppts.length;
+    renderAllAppts();
+  });
+}
+
+function updateStats() {
+  const paying = allUsers.filter(u => u.plan && u.plan !== 'trial');
+  const trial = allUsers.filter(u => !u.plan || u.plan === 'trial');
+  const mrr = paying.reduce((s,u) => s + (PLAN_PRICE[u.plan]||0), 0);
+  document.getElementById('statTotal').textContent = allUsers.length;
+  document.getElementById('statPaying').textContent = paying.length;
+  document.getElementById('statTrial').textContent = trial.length;
+  document.getElementById('statMRR').textContent = '₹'+mrr.toLocaleString('en-IN');
+
+  // Plan distribution bars
+  const counts = {trial:0, starter:0, pro:0, studio:0};
+  allUsers.forEach(u => { counts[u.plan||'trial'] = (counts[u.plan||'trial']||0)+1; });
+  const colors = {trial:'var(--warning)',starter:'var(--info)',pro:'var(--green)',studio:'var(--purple)'};
+  document.getElementById('planDist').innerHTML = Object.entries(counts).map(([plan,count]) =>
+    `<div style="display:flex;align-items:center;gap:8px;background:var(--black);border:1px solid var(--border);border-radius:10px;padding:12px 18px">
+      <div style="width:10px;height:10px;border-radius:50%;background:${colors[plan]}"></div>
+      <span style="font-size:14px;font-weight:600;text-transform:capitalize">${plan}</span>
+      <span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${colors[plan]}">${count}</span>
+    </div>`
+  ).join('');
+}
+
+function planBadge(plan) {
+  const cls = {trial:'badge-trial',starter:'badge-starter',pro:'badge-pro',studio:'badge-studio'}[plan||'trial']||'badge-trial';
+  return `<span class="badge ${cls}">${plan||'trial'}</span>`;
+}
+
+function renderRecentSignups() {
+  const recent = allUsers.slice(0,8);
+  const tbody = document.getElementById('recentSignups');
+  const empty = document.getElementById('recentEmpty');
+  if (!recent.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = recent.map(u =>
+    `<tr>
+      <td style="font-weight:600">${esc(u.businessName||'—')}</td>
+      <td style="color:var(--muted-l)">${esc(u.email||'—')}</td>
+      <td>${planBadge(u.plan)}</td>
+      <td style="font-size:12px;color:var(--muted)">${u.createdAt ? new Date(u.createdAt.toMillis()).toLocaleDateString('en-IN') : '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openUserModal('${u.id}')">Manage</button></td>
+    </tr>`
+  ).join('');
+}
+
+window.renderUsers = () => {
+  const search = document.getElementById('userSearch').value.toLowerCase();
+  const planF = document.getElementById('planFilter').value;
+  let filtered = allUsers.filter(u => {
+    const mS = !search || u.businessName?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search);
+    const mP = planF==='all' || (u.plan||'trial')===planF;
+    return mS && mP;
+  });
+  const tbody = document.getElementById('usersTable');
+  const empty = document.getElementById('usersEmpty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map(u => {
+    const apptCount = allAppts.filter(a => a.uid===u.id).length;
+    return `<tr>
+      <td style="font-weight:600">${esc(u.businessName||'—')}</td>
+      <td style="color:var(--muted-l);font-size:12px">${esc(u.email||'—')}</td>
+      <td>${planBadge(u.plan)}</td>
+      <td style="text-align:center">${apptCount}</td>
+      <td style="font-size:12px;color:var(--muted)">${u.createdAt ? new Date(u.createdAt.toMillis()).toLocaleDateString('en-IN') : '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openUserModal('${u.id}')">Manage</button></td>
+    </tr>`;
+  }).join('');
+};
+
+function renderPayments() {
+  const tbody = document.getElementById('paymentsTable');
+  const empty = document.getElementById('paymentsEmpty');
+  if (!allPayments.length) { empty.style.display='block'; tbody.innerHTML=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = allPayments.map(p => {
+    const user = allUsers.find(u => u.id===p.uid);
+    return `<tr>
+      <td style="font-weight:600">${esc(user?.businessName||p.uid||'—')}</td>
+      <td>${planBadge(p.plan)}</td>
+      <td style="color:var(--green);font-weight:600">₹${(p.amount||0).toLocaleString('en-IN')}</td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace">${p.razorpayPaymentId||'—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${p.createdAt ? new Date(p.createdAt.toMillis()).toLocaleDateString('en-IN') : '—'}</td>
+      <td><span class="badge badge-paid">Paid</span></td>
+    </tr>`;
+  }).join('');
+}
+
+window.renderAllAppts = () => {
+  const search = document.getElementById('apptSearch').value.toLowerCase();
+  const filtered = allAppts.filter(a =>
+    !search || a.clientName?.toLowerCase().includes(search) || a.service?.toLowerCase().includes(search)
+  );
+  const tbody = document.getElementById('allApptsTable');
+  const empty = document.getElementById('allApptsEmpty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.slice(0,100).map(a => {
+    const user = allUsers.find(u => u.id===a.uid);
+    const dt = a.datetime ? new Date(a.datetime) : null;
+    const badge = {confirmed:'badge-pro',pending:'badge-trial',cancelled:'badge-failed',noshow:'badge-trial'}[a.status||'pending'];
+    return `<tr>
+      <td style="font-weight:600">${esc(a.clientName||'—')}</td>
+      <td>${esc(a.service||'—')}</td>
+      <td style="font-size:12px;color:var(--muted-l)">${esc(user?.businessName||'—')}</td>
+      <td style="font-size:12px;color:var(--muted)">${dt ? dt.toLocaleDateString('en-IN') : '—'}</td>
+      <td>${a.ticket ? '₹'+Number(a.ticket).toLocaleString('en-IN') : '—'}</td>
+      <td><span class="badge ${badge}">${a.status||'pending'}</span></td>
+    </tr>`;
+  }).join('');
+};
+
+// User modal
+window.openUserModal = (uid) => {
+  selectedUserId = uid;
+  const u = allUsers.find(x => x.id===uid);
+  if (!u) return;
+  document.getElementById('userModalTitle').textContent = u.businessName || u.email;
+  const apptCount = allAppts.filter(a => a.uid===uid).length;
+  const payCount = allPayments.filter(p => p.uid===uid).length;
+  document.getElementById('userDetailGrid').innerHTML = [
+    ['Email', u.email||'—'], ['Plan', u.plan||'trial'],
+    ['Appointments', apptCount], ['Payments', payCount],
+    ['Joined', u.createdAt ? new Date(u.createdAt.toMillis()).toLocaleDateString('en-IN') : '—'],
+    ['UID', u.id.slice(0,12)+'…']
+  ].map(([l,v]) => `<div class="detail-item"><label>${l}</label><span>${esc(String(v))}</span></div>`).join('');
+  document.getElementById('changePlanSelect').value = u.plan||'trial';
+  document.getElementById('userModal').classList.add('open');
+};
+window.closeUserModal = () => { document.getElementById('userModal').classList.remove('open'); selectedUserId=null; };
+
+window.updateUserPlan = async () => {
+  if (!selectedUserId) return;
+  const newPlan = document.getElementById('changePlanSelect').value;
+  await updateDoc(doc(db,'users',selectedUserId), { plan:newPlan, updatedAt:serverTimestamp() });
+  showToast(`Plan updated to ${newPlan} ✓`, 'success');
+  closeUserModal();
+};
+
+window.deleteUser = async () => {
+  if (!selectedUserId) return;
+  const u = allUsers.find(x => x.id===selectedUserId);
+  if (!confirm(`Delete ${u?.businessName||u?.email}? This cannot be undone.`)) return;
+  await deleteDoc(doc(db,'users',selectedUserId));
+  showToast('User deleted', 'success');
+  closeUserModal();
+};
+
+// Tab switching
+window.showTab = (tab) => {
+  ['overview','users','payments','appointments'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab?'block':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('onclick')?.includes(tab));
+  });
+};
+
+window.handleLogout = async () => { await signOut(auth); window.location.href='login.html'; };
+
+function esc(s) { return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add('hidden'), 3000);
+}
+document.getElementById('userModal').addEventListener('click', e => {
+  if (e.target===document.getElementById('userModal')) closeUserModal();
+});
+</script>
+</body>
+</html>

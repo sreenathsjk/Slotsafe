@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlotSafe — Pricing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  :root{
+    --black:#0a0a0a;--bg:#0d0d0d;--card:#141414;--border:#1e1e1e;--border-l:#262626;
+    --green:#00e87a;--green-dim:rgba(0,232,122,.08);--green-mid:rgba(0,232,122,.25);
+    --white:#f0f0eb;--muted:#666;--muted-l:#999;--danger:#ff4d4d;--sidebar:220px;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar);background:var(--black);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+  .sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--white);text-decoration:none}
+  .logo-icon{width:30px;height:30px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-icon svg{width:16px;height:16px;stroke:#0a0a0a;stroke-width:2.5;fill:none;stroke-linecap:round}
+  .sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--muted-l);font-size:14px;font-weight:500;text-decoration:none;transition:all .2s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+  .nav-item svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .nav-item:hover,.nav-item.active{background:var(--card);color:var(--white)}
+  .nav-item.active{color:var(--green)}
+  .sidebar-footer{padding:16px 12px;border-top:1px solid var(--border)}
+  .user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--card)}
+  .user-avatar{width:34px;height:34px;background:var(--green-dim);border:1px solid var(--green-mid);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--green);flex-shrink:0}
+  .user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-plan{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column}
+  .topbar{background:var(--black);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;position:sticky;top:0;z-index:40}
+  .content{padding:40px 28px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:100px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .2s;text-decoration:none;justify-content:center}
+  .btn-primary{background:var(--green);color:var(--black)}
+  .btn-primary:hover{background:#00ff88;transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,232,122,.3)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-ghost{background:transparent;color:var(--muted-l);border:1px solid var(--border-l)}
+  .btn-ghost:hover{color:var(--white);border-color:var(--border)}
+
+  /* Current plan banner */
+  .current-plan-banner{background:var(--green-dim);border:1px solid var(--green-mid);border-radius:16px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;margin-bottom:40px}
+  .cpb-left h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
+  .cpb-left p{font-size:14px;color:var(--muted-l);font-weight:300}
+  .cpb-badge{background:var(--green);color:var(--black);font-size:11px;font-weight:700;padding:5px 14px;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
+
+  /* Billing toggle */
+  .billing-toggle{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:40px}
+  .billing-toggle span{font-size:14px;font-weight:500;color:var(--muted-l)}
+  .billing-toggle span.active{color:var(--white)}
+  .toggle-switch{width:48px;height:26px;background:var(--border-l);border-radius:100px;position:relative;cursor:pointer;transition:background .2s}
+  .toggle-switch.yearly{background:var(--green)}
+  .toggle-knob{width:20px;height:20px;background:var(--white);border-radius:50%;position:absolute;top:3px;left:3px;transition:left .2s}
+  .toggle-switch.yearly .toggle-knob{left:25px}
+  .save-badge{background:var(--green-dim);border:1px solid var(--green-mid);color:var(--green);font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}
+
+  /* Pricing grid */
+  .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:20px;overflow:hidden;margin-bottom:48px}
+  .price-card{background:var(--card);padding:40px 36px;position:relative;transition:background .2s}
+  .price-card:hover{background:#181818}
+  .price-card.featured{background:var(--black);border:2px solid var(--green);border-radius:4px;z-index:2}
+  .popular-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--black);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 16px;border-radius:100px;white-space:nowrap}
+  .plan-name{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+  .plan-price{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;line-height:1;margin-bottom:6px}
+  .plan-price sup{font-size:22px;vertical-align:super}
+  .plan-price .per{font-size:15px;font-weight:400;color:var(--muted);font-family:'DM Sans',sans-serif}
+  .plan-original{font-size:13px;color:var(--muted);text-decoration:line-through;margin-bottom:4px;height:18px}
+  .plan-desc{font-size:14px;color:var(--muted-l);margin-bottom:28px;font-weight:300;line-height:1.6}
+  .plan-features{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:32px}
+  .plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--muted-l);font-weight:300;line-height:1.4}
+  .check{color:var(--green);flex-shrink:0;font-size:13px;margin-top:1px}
+  .cross{color:var(--muted);flex-shrink:0;font-size:13px;margin-top:1px}
+  .price-card.featured .plan-features li{color:var(--white)}
+  .plan-cta{width:100%}
+
+  /* Feature comparison table */
+  .compare-section{margin-top:16px}
+  .compare-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;margin-bottom:24px;text-align:center}
+  .compare-table{width:100%;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;border-collapse:collapse}
+  .compare-table th{padding:16px 20px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;text-align:center;border-bottom:1px solid var(--border)}
+  .compare-table th:first-child{text-align:left}
+  .compare-table td{padding:14px 20px;font-size:14px;border-bottom:1px solid var(--border);text-align:center;color:var(--muted-l)}
+  .compare-table td:first-child{text-align:left;color:var(--white);font-weight:500}
+  .compare-table tr:last-child td{border-bottom:none}
+  .compare-table tr:hover td{background:rgba(255,255,255,.02)}
+  .ct-yes{color:var(--green);font-size:16px}
+  .ct-no{color:var(--border-l);font-size:16px}
+  .ct-header{background:var(--black)!important;font-family:'Syne',sans-serif;font-size:14px!important;font-weight:700!important;color:var(--white)!important;text-transform:none!important;letter-spacing:0!important}
+  .ct-featured{color:var(--green)!important}
+
+  /* Payment modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border-l);border-radius:20px;padding:36px;width:100%;max-width:460px;animation:modalIn .3s ease}
+  @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+  .modal-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px}
+  .modal-sub{font-size:14px;color:var(--muted-l);margin-bottom:28px;font-weight:300}
+  .order-summary{background:var(--black);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px}
+  .order-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 0}
+  .order-row.total{border-top:1px solid var(--border);margin-top:8px;padding-top:14px;font-weight:700;font-size:16px;color:var(--white)}
+  .order-row.total span:last-child{color:var(--green)}
+  .pay-note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6}
+  .pay-note a{color:var(--green);text-decoration:none}
+  .razorpay-logos{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;opacity:.4;font-size:12px;color:var(--muted)}
+  .modal-actions{display:flex;gap:10px}
+  .modal-actions .btn{flex:1}
+
+  /* Success state */
+  .success-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:16px}
+  .success-overlay.open{display:flex}
+  .success-icon{font-size:72px;animation:bounceIn .5s ease}
+  @keyframes bounceIn{from{transform:scale(0)}to{transform:scale(1)}}
+  .success-overlay h2{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--green)}
+  .success-overlay p{font-size:16px;color:var(--muted-l);max-width:360px}
+
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border-l);border-radius:12px;padding:14px 20px;font-size:14px;display:flex;align-items:center;gap:10px;z-index:500;animation:toastIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+  .toast.hidden{display:none}
+  .toast.success{border-color:var(--green-mid)}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  @media(max-width:900px){.pricing-grid{grid-template-columns:1fr}}
+  @media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="index.html" class="sidebar-logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    SlotSafe
+  </a>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Appointments
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Waitlist
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      WA Reminders
+    </a>
+    <a class="nav-item active" href="pricing.html">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Upgrade Plan
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar" id="userInitial">?</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Loading…</div>
+        <div class="user-plan" id="userPlan">Trial</div>
+      </div>
+    </div>
+    <button class="nav-item" onclick="handleLogout()" style="margin-top:8px;color:var(--danger)">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">Upgrade Plan</div>
+  <div class="content">
+
+    <!-- Current Plan -->
+    <div class="current-plan-banner">
+      <div class="cpb-left">
+        <h3>You're on the <span id="currentPlanName">Free Trial</span></h3>
+        <p id="trialNote">14-day trial · Upgrade anytime to keep your data and automations</p>
+      </div>
+      <div class="cpb-badge" id="currentPlanBadge">Trial</div>
+    </div>
+
+    <!-- Billing Toggle -->
+    <div class="billing-toggle">
+      <span id="monthlyLabel" class="active">Monthly</span>
+      <div class="toggle-switch" id="billingToggle" onclick="toggleBilling()">
+        <div class="toggle-knob"></div>
+      </div>
+      <span id="yearlyLabel">Yearly</span>
+      <span class="save-badge">Save 2 months</span>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="pricing-grid">
+
+      <!-- Starter -->
+      <div class="price-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-original" id="orig-starter"></div>
+        <div class="plan-price"><sup>₹</sup><span id="price-starter">999</span><span class="per">/mo</span></div>
+        <div class="plan-desc">Solo practitioner · up to 20 appointments/week</div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> WhatsApp confirmation bot</li>
+          <li><span class="check">✓</span> Waitlist recovery (3 contacts)</li>
+          <li><span class="check">✓</span> SMS fallback</li>
+          <li><span class="check">✓</span> Monthly ROI report</li>
+          <li><span class="check">✓</span> Up to 20 appts/week</li>
+          <li><span class="check">✓</span> 1 staff member</li>
+          <li><span class="cross">✗</span> Hindi/regional language</li>
+          <li><span class="cross">✗</span> Priority support</li>
+        </ul>
+        <button class="btn btn-ghost plan-cta" onclick="openPayment('starter')">Choose Starter</button>
+      </div>
+
+      <!-- Pro (featured) -->
+      <div class="price-card featured">
+        <div class="popular-badge">Most Popular</div>
+        <div class="plan-name" style="color:var(--green)">Pro</div>
+        <div class="plan-original" id="orig-pro"></div>
+        <div class="plan-price"><sup>₹</sup><span id="price-pro">1,999</span><span class="per">/mo</span></div>
+        <div class="plan-desc">Salon with 1–3 staff · up to 60 appointments/week</div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Everything in Starter</li>
+          <li><span class="check">✓</span> Waitlist recovery (10 contacts)</li>
+          <li><span class="check">✓</span> Hindi + regional language</li>
+          <li><span class="check">✓</span> Owner instant alerts</li>
+          <li><span class="check">✓</span> Up to 60 appts/week</li>
+          <li><span class="check">✓</span> Up to 3 staff members</li>
+          <li><span class="check">✓</span> Priority WhatsApp support</li>
+          <li><span class="check">✓</span> Custom message branding</li>
+        </ul>
+        <button class="btn btn-primary plan-cta" onclick="openPayment('pro')">Upgrade to Pro</button>
+      </div>
+
+      <!-- Studio -->
+      <div class="price-card">
+        <div class="plan-name">Studio</div>
+        <div class="plan-original" id="orig-studio"></div>
+        <div class="plan-price"><sup>₹</sup><span id="price-studio">3,999</span><span class="per">/mo</span></div>
+        <div class="plan-desc">Multi-chair studio, clinic or gym · up to 150 appts/week</div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Everything in Pro</li>
+          <li><span class="check">✓</span> Unlimited waitlist contacts</li>
+          <li><span class="check">✓</span> Unlimited staff members</li>
+          <li><span class="check">✓</span> Multi-branch support</li>
+          <li><span class="check">✓</span> Up to 150 appts/week</li>
+          <li><span class="check">✓</span> Dedicated onboarding call</li>
+          <li><span class="check">✓</span> Custom WhatsApp branding</li>
+          <li><span class="check">✓</span> API access</li>
+        </ul>
+        <button class="btn btn-ghost plan-cta" onclick="openPayment('studio')">Choose Studio</button>
+      </div>
+    </div>
+
+    <!-- Compare Table -->
+    <div class="compare-section">
+      <h2 class="compare-title">Full Feature Comparison</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="ct-header">Starter<br><span style="font-size:12px;color:var(--muted);font-weight:400">₹999/mo</span></th>
+            <th class="ct-header ct-featured">Pro ⭐<br><span style="font-size:12px;font-weight:400">₹1,999/mo</span></th>
+            <th class="ct-header">Studio<br><span style="font-size:12px;color:var(--muted);font-weight:400">₹3,999/mo</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Appointments/week</td><td>20</td><td class="ct-featured">60</td><td>150</td></tr>
+          <tr><td>Staff members</td><td>1</td><td class="ct-featured">3</td><td>Unlimited</td></tr>
+          <tr><td>WhatsApp confirmation bot</td><td class="ct-yes">✓</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>SMS fallback</td><td class="ct-yes">✓</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Waitlist recovery contacts</td><td>3</td><td class="ct-featured">10</td><td>Unlimited</td></tr>
+          <tr><td>Hindi/regional language</td><td class="ct-no">✗</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Owner instant alerts</td><td class="ct-no">✗</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Custom message branding</td><td class="ct-no">✗</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Monthly ROI report</td><td class="ct-yes">✓</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Priority support</td><td class="ct-no">✗</td><td class="ct-yes ct-featured">✓</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Multi-branch</td><td class="ct-no">✗</td><td class="ct-no">✗</td><td class="ct-yes">✓</td></tr>
+          <tr><td>API access</td><td class="ct-no">✗</td><td class="ct-no">✗</td><td class="ct-yes">✓</td></tr>
+          <tr><td>Dedicated onboarding call</td><td class="ct-no">✗</td><td class="ct-no">✗</td><td class="ct-yes">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <h2 class="modal-title" id="payModalTitle">Upgrade to Pro</h2>
+    <p class="modal-sub">You'll be charged via Razorpay. Cancel anytime from your dashboard.</p>
+    <div class="order-summary">
+      <div class="order-row"><span style="color:var(--muted-l)">Plan</span><span id="summaryPlan">Pro</span></div>
+      <div class="order-row"><span style="color:var(--muted-l)">Billing</span><span id="summaryBilling">Monthly</span></div>
+      <div class="order-row"><span style="color:var(--muted-l)">GST (18%)</span><span id="summaryGST">₹360</span></div>
+      <div class="order-row total"><span>Total</span><span id="summaryTotal">₹2,359</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closePayment()">Cancel</button>
+      <button class="btn btn-primary" id="payBtn" onclick="initiatePayment()">
+        Pay with Razorpay →
+      </button>
+    </div>
+    <p class="pay-note">Secured by <a href="#">Razorpay</a> · UPI, Cards, Net Banking, Wallets accepted<br>By paying you agree to our <a href="#">Terms of Service</a></p>
+    <div class="razorpay-logos">🔒 256-bit SSL encrypted · PCI DSS compliant</div>
+  </div>
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">🎉</div>
+  <h2 id="successPlanName">Welcome to Pro!</h2>
+  <p>Your plan is now active. All features are unlocked. SlotSafe will now automatically protect your slots 24/7.</p>
+  <a href="dashboard.html" class="btn btn-primary" style="margin-top:8px;padding:14px 32px;font-size:16px">Go to Dashboard →</a>
+</div>
+
+<div class="toast hidden" id="toast"><span id="toastMsg">Done</span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc, addDoc, collection, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const FIREBASE_CONFIG = {
+  apiKey:"YOUR_API_KEY", authDomain:"YOUR_PROJECT.firebaseapp.com",
+  projectId:"YOUR_PROJECT_ID", storageBucket:"YOUR_PROJECT.appspot.com",
+  messagingSenderId:"YOUR_SENDER_ID", appId:"YOUR_APP_ID"
+};
+const RAZORPAY_KEY = "rzp_test_YOUR_KEY_HERE";
+
+const PLANS = {
+  starter:{ name:"Starter", monthly:999,  yearly:832  },
+  pro:    { name:"Pro",     monthly:1999, yearly:1666 },
+  studio: { name:"Studio",  monthly:3999, yearly:3332 }
+};
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let currentUser=null, userData=null, billingYearly=false, selectedPlan=null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href='login.html'; return; }
+  currentUser = user;
+  const snap = await getDoc(doc(db,'users',user.uid));
+  if (snap.exists()) {
+    userData = snap.data();
+    document.getElementById('userName').textContent = userData.businessName || user.email;
+    document.getElementById('userInitial').textContent = (userData.businessName||user.email)[0].toUpperCase();
+    const plan = userData.plan || 'trial';
+    document.getElementById('userPlan').textContent = plan;
+    document.getElementById('currentPlanName').textContent = plan==='trial' ? 'Free Trial' : plan.charAt(0).toUpperCase()+plan.slice(1);
+    document.getElementById('currentPlanBadge').textContent = plan==='trial' ? 'Trial' : plan.toUpperCase();
+    if (plan !== 'trial') document.getElementById('trialNote').textContent = 'Active subscription · Renews automatically';
+  }
+});
+
+window.toggleBilling = () => {
+  billingYearly = !billingYearly;
+  const tog = document.getElementById('billingToggle');
+  tog.classList.toggle('yearly', billingYearly);
+  document.getElementById('monthlyLabel').classList.toggle('active', !billingYearly);
+  document.getElementById('yearlyLabel').classList.toggle('active', billingYearly);
+  updatePrices();
+};
+
+function updatePrices() {
+  Object.entries(PLANS).forEach(([key, p]) => {
+    const price = billingYearly ? p.yearly : p.monthly;
+    document.getElementById('price-'+key).textContent = price.toLocaleString('en-IN');
+    const origEl = document.getElementById('orig-'+key);
+    if (billingYearly) {
+      origEl.textContent = '₹'+p.monthly.toLocaleString('en-IN')+'/mo';
+    } else {
+      origEl.textContent = '';
+    }
+  });
+}
+
+window.openPayment = (planKey) => {
+  selectedPlan = planKey;
+  const p = PLANS[planKey];
+  const price = billingYearly ? p.yearly : p.monthly;
+  const gst = Math.round(price * 0.18);
+  const total = price + gst;
+  document.getElementById('payModalTitle').textContent = `Upgrade to ${p.name}`;
+  document.getElementById('summaryPlan').textContent = p.name;
+  document.getElementById('summaryBilling').textContent = billingYearly ? 'Yearly (2 months free)' : 'Monthly';
+  document.getElementById('summaryGST').textContent = '₹'+gst.toLocaleString('en-IN');
+  document.getElementById('summaryTotal').textContent = '₹'+total.toLocaleString('en-IN');
+  document.getElementById('payModal').classList.add('open');
+};
+window.closePayment = () => document.getElementById('payModal').classList.remove('open');
+
+window.initiatePayment = () => {
+  if (!selectedPlan) return;
+  const p = PLANS[selectedPlan];
+  const price = billingYearly ? p.yearly : p.monthly;
+  const gst = Math.round(price * 0.18);
+  const totalPaise = (price + gst) * 100;
+
+  const options = {
+    key: RAZORPAY_KEY,
+    amount: totalPaise,
+    currency: "INR",
+    name: "SlotSafe",
+    description: `${p.name} Plan — ${billingYearly?'Yearly':'Monthly'}`,
+    image: "",
+    prefill: {
+      name: userData?.businessName || '',
+      email: currentUser?.email || '',
+    },
+    theme: { color: "#00e87a" },
+    modal: { backdropclose: false },
+    handler: async (response) => {
+      await handlePaymentSuccess(response, selectedPlan, price);
+    }
+  };
+
+  try {
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', (resp) => {
+      showToast('Payment failed: ' + (resp.error?.description || 'Unknown error'));
+    });
+    rzp.open();
+    closePayment();
+  } catch(e) {
+    showToast('Razorpay not loaded. Add your API key to enable payments.');
+  }
+};
+
+async function handlePaymentSuccess(response, planKey, amount) {
+  const p = PLANS[planKey];
+  try {
+    // Update user plan in Firestore
+    await updateDoc(doc(db,'users',currentUser.uid), {
+      plan: planKey,
+      planActivatedAt: serverTimestamp(),
+      billingCycle: billingYearly ? 'yearly' : 'monthly'
+    });
+    // Store payment record
+    await addDoc(collection(db,'payments'), {
+      uid: currentUser.uid,
+      plan: planKey,
+      amount,
+      razorpayPaymentId: response.razorpay_payment_id || 'N/A',
+      razorpayOrderId: response.razorpay_order_id || 'N/A',
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('successPlanName').textContent = `Welcome to ${p.name}!`;
+    document.getElementById('successOverlay').classList.add('open');
+  } catch(e) {
+    showToast('Payment recorded but profile update failed. Contact support.');
+  }
+}
+
+window.handleLogout = async () => { await signOut(auth); window.location.href='login.html'; };
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast success';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add('hidden'), 4000);
+}
+
+document.getElementById('payModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('payModal')) closePayment();
+});
+</script>
+</body>
+</html>
