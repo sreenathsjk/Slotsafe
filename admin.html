@@ -304,11 +304,16 @@ import { getFirestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc,
          query, orderBy, onSnapshot, where, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const FIREBASE_CONFIG = {
-  apiKey:"YOUR_API_KEY", authDomain:"YOUR_PROJECT.firebaseapp.com",
-  projectId:"YOUR_PROJECT_ID", storageBucket:"YOUR_PROJECT.appspot.com",
-  messagingSenderId:"YOUR_SENDER_ID", appId:"YOUR_APP_ID"
+ const firebaseConfig = {
+  apiKey: "AIzaSyD5Ui014GSbnNZlSR6bTOvjZskXPwK_mM8",
+  authDomain: "bulksend-6374d.firebaseapp.com",
+  databaseURL: "https://bulksend-6374d-default-rtdb.firebaseio.com",
+  projectId: "bulksend-6374d",
+  storageBucket: "bulksend-6374d.firebasestorage.app",
+  messagingSenderId: "945745818981",
+  appId: "1:945745818981:web:2a17596981b2d2c84b1d8c"
 };
+
 const app  = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db   = getFirestore(app);
